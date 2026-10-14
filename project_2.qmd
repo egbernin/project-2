@@ -73,3 +73,20 @@ smoothed_histogram <- ggplot(housing_data |>
                                drop_na(Rooms), aes(x = Rooms))
 smoothed_histogram + geom_density()
 ```
+
+*Adding a boxplot that compares **Price** and **Type**.*
+
+```{r}
+price_boxplot <- ggplot(housing_data |>
+                          drop_na(Price, Type))
+price_boxplot + geom_boxplot(aes(x = Type, y = Price, fill = Type))
+```
+
+*Adding a scatterplot that compares **Price** and **Distance**.*
+
+```{r}
+price_scatterplot <- ggplot(housing_data |>
+                              drop_na(Price, Distance), aes(x = Price, y = Distance))
+price_scatterplot + geom_point() +
+  geom_smooth(method = lm)
+```
