@@ -29,7 +29,7 @@ table(housing_data$Method)
 table(housing_data$Type)
 
 #One way table for the Regionname category
-table(housing_type$Regionname)
+table(housing_data$Regionname)
 
 #Two way table for both Method and Type
 table(housing_data$Method, housing_data$Type)
@@ -89,4 +89,27 @@ price_scatterplot <- ggplot(housing_data |>
                               drop_na(Price, Distance), aes(x = Price, y = Distance))
 price_scatterplot + geom_point() +
   geom_smooth(method = lm)
+```
+
+*Making a side-by-side faceted bar plot of the **Type**, **Method**, and **Regionname** variables.*
+
+```{r}
+ggplot(data = housing_data |>
+         drop_na(Type, Method, Regionname), aes(x = Method, fill = Type)) +
+  geom_bar(position = 'dodge') +
+  labs(x = 'Method') +
+  scale_fill_discrete('Type') +
+  facet_wrap(~ Regionname)
+```
+
+*Adding a heatmap for the **Regionname**, **Type, and Distance** variables.*
+
+```{r}
+ggplot(data = housing_data |>
+         drop_na(Regionname, Type, Distance), aes(x = Type, y = Regionname, fill = Distance)) +
+  geom_tile(color = 'lightblue') +
+  scale_fill_gradient(low = 'lightblue', high = 'darkblue') +
+  theme_minimal() +
+  labs(x = 'Type', y = 'Regionname')
+  
 ```
