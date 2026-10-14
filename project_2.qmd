@@ -1,0 +1,42 @@
+---
+title: "project_2"
+format: html
+editor: visual
+---
+
+*This is where I'm reading any necessary packages into the current session.*
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(readr)
+```
+
+*I'm using read_csv to read in the data in the form of a tibble. Then, I'm using str() to check the structure of the data and make sure that all of the data was read in as the right type.*
+
+```{r}
+housing_data <- read_csv('MELBOURNE_HOUSE_PRICES_LESS.csv')
+str(housing_data)
+```
+
+*Making contingency tables.*
+
+```{r}
+#One way table for the Method category
+table(housing_data$Method)
+
+#One way table for the Type category
+table(housing_data$Type)
+
+#One way table for the Regionname category
+table(housing_type$Regionname)
+
+#Two way table for both Method and Type
+table(housing_data$Method, housing_data$Type)
+
+#Two way table for both Method and Regionname
+table(housing_data$Method, housing_data$Regionname)
+
+#Two way table for both Type and Regionname
+table(housing_data$Type, housing_data$Regionname)
+```
