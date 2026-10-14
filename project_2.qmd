@@ -40,3 +40,36 @@ table(housing_data$Method, housing_data$Regionname)
 #Two way table for both Type and Regionname
 table(housing_data$Type, housing_data$Regionname)
 ```
+
+*Finding numeric summaries.*
+
+```{r}
+#Finding the mean, median, and sd Price values across the Regionname cateogry
+housing_data |>
+  group_by(Regionname) |>
+  drop_na(Regionname) |>
+  summarize(mean_price = mean(Price, na.rm = TRUE), median_price = median(Price, na.rm = TRUE), sd_price = sd(Price, na.rm = TRUE))
+
+#Finding the mean and sd Propertycount values across the CouncilArea category
+housing_data |>
+  group_by(CouncilArea) |>
+  drop_na(CouncilArea) |>
+  summarize(mean_size = mean(Propertycount, na.rm = TRUE), median_size = median(Propertycount, na.rm = TRUE), sd_size = sd(Propertycount, na.rm = TRUE))
+```
+
+*Adding stacked bar chart for the **Regionname** and **CouncilArea** categories.*
+
+```{r}
+stacked_barplot <- ggplot(data = housing_data |>
+                           drop_na(Regionname, CouncilArea), aes(x = Regionname, fill = CouncilArea))
+stacked_barplot + geom_bar() +
+  labs(x = 'Name of General Region')
+```
+
+*Adding a histogram for the **Rooms** variable.*
+
+```{r}
+smoothed_histogram <- ggplot(housing_data |>
+                               drop_na(Rooms), aes(x = Rooms))
+smoothed_histogram + geom_density()
+```
