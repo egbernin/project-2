@@ -1,0 +1,62 @@
+#
+# This is a Shiny web application. You can run the application by clicking
+# the 'Run App' button above.
+#
+# Find out more about building applications with Shiny here:
+#
+#    https://shiny.posit.co/
+#
+
+library(shiny)
+library(bslib)
+
+ui <- page_sidebar(
+  
+    # Application title
+    titlePanel("Melbourne Housing Data"),
+    
+    sidebar = sidebar(
+      #Making widget to select categorical variable
+      selectInput(
+        'cat',
+        label = 'Choose a categorical variable',
+        choices =
+          list(
+            'Type',
+            'Method',
+            'Regionname',
+            'Councilarea'
+          ),
+        selected = 'Type'
+      ),
+      selectInput(
+        'num',
+        label = 'Choose a numeric variable',
+        choices =
+          list(
+            'Rooms',
+            'Price',
+            'Distance'
+          ),
+        selected = 'Rooms'
+      ),
+      conditionalPanel(condition = "input.num == 'Rooms'",
+                       sliderInput('roomrange', 'Select Range', min = 1, max = 31, value = c(1,31)
+                       )),
+      conditionalPanel(condition = "input.num == 'Price'",
+                       sliderInput('pricerange', 'Select Range', min = 85000, max = 11200000, value = c(85000, 11200000)
+                       )),
+      conditionalPanel(condition = "input.num == 'Distance'",
+                       sliderInput('distancerange', 'Select Range', min = 0, max = 64.1, value = c(0, 64.1)))
+    )
+
+
+)
+
+# Define server logic required to draw a histogram
+server <- function(input, output) {
+
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
