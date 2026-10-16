@@ -10,6 +10,11 @@
 library(shiny)
 library(bslib)
 library(shinydashboard)
+library(readr)
+library(tidyverse)
+library(dplyr)
+
+housing_data <- read_csv('MELBOURNE_HOUSE_PRICES_LESS.csv')
 
 ui <- page_sidebar(
   
@@ -18,7 +23,7 @@ ui <- page_sidebar(
     
     sidebar = sidebar(
       #Making widget to select categorical variable
-      selectInput(
+      checkboxGroupInput(
         'cat',
         label = 'Choose a categorical variable',
         choices =
@@ -30,7 +35,7 @@ ui <- page_sidebar(
           ),
         selected = 'Type'
       ),
-      selectInput(
+      checkboxGroupInput(
         'num',
         label = 'Choose a numeric variable',
         choices =
@@ -52,19 +57,25 @@ ui <- page_sidebar(
                        ))
     ),
     tabsetPanel(
-      tabPanel('About', 'The purpose of this app is to explore the different relationships between variables relating to this dataset, as well as to summarize the values within the variables.
-               The data used in this app was scraped from the real estate website Domain. It provides data for many variables relating to the location, type, and price of the building, as well as who sold it and when.
-               More information about this dataset can be found at this link: https://www.kaggle.com/datasets/anthonypino/melbourne-housing-market
-               The sidebar of this app is meant for you to subset different variables and give the specific range of values for each variable that you would like to see.
-               The Data Download tab is meant to give you a place that you can view and download this dataset.
-               The Data Exploration tab is meant to give you different numeric and graphical summaries based on the subsetted variables you selected in the sidebar.'),
-      tabPanel('Data Download', 'Contents'),
-      tabPanel('Data Exploration', 'Contents')
-    )
+      tabPanel('About', 
+               p('The purpose of this app is to display and summarize data from the Melbourne Housing Market dataset.'),
+               p('This data was scraped from the publicly available records of the Australian real estate website Domain. More information about this dataset can be found at the link below:'),
+               p('https://www.kaggle.com/datasets/anthonypino/melbourne-housing-market'),
+               p('The first sidebar widget is for subsetting categorical variables from this dataset. The second is for subsetting the numeric variables from this dataset.'),
+               p('The Data Download tab in the main body of this app is there to provide a resource for you to look at the dataset and download it.'),
+               p('The Data Exploration tab is to display categorical and numeric data summmaries for this dataset. The summaries displayed will depend on the variables subsetted.')),
+      tabPanel('Data Download', 'contents'),
+      tabPanel('Data Exploration', 'This tab is for displaying summaries of the variables that you subsetted in the sidebar.',
+               br(),
+               tabsetPanel(
+                 tabPanel('Categorical Data Summaries', 'contents'),
+                 tabPanel('Numeric Data Summaries', 'contents')
+               ))
+    ),
     
-
-
-)
+    
+  )
+    
 
 # Define server logic
 server <- function(input, output) {
