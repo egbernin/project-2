@@ -76,7 +76,13 @@ ui <- page_sidebar(
                tabsetPanel(
                  tabPanel('Contingency Tables', 'content'),
                  tabPanel('Numerical Summaries', 'content'),
-                 tabPanel('Plots', 'content')
+                 tabPanel('Plots',
+                          plotOutput('scatterplot'),
+                          plotOutput('stacked_barplot'),
+                          plotOutput('heatmap'),
+                          plotOutput('boxplot'),
+                          plotOutput('histogram'),
+                          plotOutput('faceted_barplot'))
                ))
     ),
     
@@ -98,8 +104,24 @@ server <- function(input, output) {
       write.csv(housing_data, con)
     }
   )
+  
+  output$scatterplot <- renderPlot({
+    ggplot(data = housing_data, aes_string(x = input$num[1], y = input$num[2])) +
+      geom_point() + geom_smooth(method = lm)
+  })
+  
+  output$stacked_barplot <- renderPlot({
+    ggplot(data = housing_data |>
+             drop_na(input$cat), aes_string(x = input$cat[1], fill = input$cat[2]))
+  })
 
+  output$boxplot <- renderPlot({
+    ggplot(data = housing_data|>
+             drop_na(input$num, input$cat), aes_string(x = input$cat, y = input$num, fill = input$cat))
+  })
+  
 }
+
 
 # Run the application 
 shinyApp(ui = ui, server = server)
