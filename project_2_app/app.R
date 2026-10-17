@@ -29,10 +29,10 @@ ui <- page_sidebar(
         label = 'Choose a categorical variable',
         choices =
           list(
-            'Type',
-            'Method',
-            'Regionname',
-            'Councilarea'
+            'Type' = housing_data$Type,
+            'Method' = housing_data$Method,
+            'Regionname' = housing_data$Regionname,
+            'Councilarea' = housing_data$Councilarea
           ),
         selected = 'Type'
       ),
@@ -42,9 +42,9 @@ ui <- page_sidebar(
         label = 'Choose a numeric variable',
         choices =
           list(
-            'Rooms',
-            'Price',
-            'Distance'
+            'Rooms' = housing_data$Rooms,
+            'Price' = housing_data$Price,
+            'Distance' = housing_data$Distance
           ),
         selected = 'Rooms'
       ),
@@ -74,7 +74,14 @@ ui <- page_sidebar(
       tabPanel('Data Exploration', 'This tab is for displaying summaries of the variables that you subsetted in the sidebar.',
                br(),
                tabsetPanel(
-                 tabPanel('Contingency Tables', 'content'),
+                 tabPanel('Contingency Tables',
+                          br(),
+                          tabsetPanel(
+                            tabPanel('One-Way',
+                                     tableOutput('one_way')),
+                            tabPanel('Two-Way',
+                                     tableOutput('two_way'))
+                          )),
                  tabPanel('Numerical Summaries', 'content'),
                  tabPanel('Plots',
                           plotOutput('scatterplot'),
@@ -105,21 +112,46 @@ server <- function(input, output) {
     }
   )
   
+  output$one_way <- renderTable({
+    table(input$num | input$cat)
+  })
+  
+  
+  
   output$scatterplot <- renderPlot({
     ggplot(data = housing_data, aes_string(x = input$num[1], y = input$num[2])) +
       geom_point() + geom_smooth(method = lm)
   })
   
   output$stacked_barplot <- renderPlot({
-    ggplot(data = housing_data |>
-             drop_na(input$cat), aes_string(x = input$cat[1], fill = input$cat[2]))
+    ggplot(data = housing_data, aes_string(x = input$cat[1], fill = input$cat[2]))
+  })
+  
+  output$heatmap <- renderPlot({
+    ggplot(data = housing_data, aes_string(x = input$cat | input$num, y = input$cat | input$num, fill = input$cat | input$num)) +
+      geom_tile(color = 'lightblue') +
+      scale_fill_gradient(low = 'lightblue', high = 'darkblue') +
+      theme_minimal() +
+      labs(title = 'Heatmap for Melbourne Housing Data')
   })
 
   output$boxplot <- renderPlot({
-    ggplot(data = housing_data|>
-             drop_na(input$num, input$cat), aes_string(x = input$cat, y = input$num, fill = input$cat))
+    ggplot(data = housing_data, aes_string(x = input$cat, y = input$num, fill = input$cat))
   })
   
+  output$histogram <- renderPlot({
+    ggplot(data = housing_data, aes_string(x = input$num)) +
+      geom_density()
+  })
+  
+  output$faceted_barplot <- renderPlot({
+    ggplot(data = housing_data, aes_string(x = input$cat)) +
+      geom_bar(position = 'dodge') +
+      labs(x = '') +
+      scale_fill_discrete('') +
+      facet_wrap(~ '')
+    
+  })
 }
 
 
