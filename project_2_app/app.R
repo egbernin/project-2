@@ -13,6 +13,7 @@ library(shinydashboard)
 library(readr)
 library(tidyverse)
 library(dplyr)
+library(DT)
 
 housing_data <- read_csv('MELBOURNE_HOUSE_PRICES_LESS.csv')
 
@@ -35,6 +36,7 @@ ui <- page_sidebar(
           ),
         selected = 'Type'
       ),
+      #Making a widget to select numeric variable
       checkboxGroupInput(
         'num',
         label = 'Choose a numeric variable',
@@ -64,12 +66,17 @@ ui <- page_sidebar(
                p('The first sidebar widget is for subsetting categorical variables from this dataset. The second is for subsetting the numeric variables from this dataset.'),
                p('The Data Download tab in the main body of this app is there to provide a resource for you to look at the dataset and download it.'),
                p('The Data Exploration tab is to display categorical and numeric data summmaries for this dataset. The summaries displayed will depend on the variables subsetted.')),
-      tabPanel('Data Download', 'contents'),
+      tabPanel('Data Download',
+               downloadLink('housing_download', 'Download'),
+               br(),
+               dataTableOutput(outputId = 'housing_table'),
+               ),
       tabPanel('Data Exploration', 'This tab is for displaying summaries of the variables that you subsetted in the sidebar.',
                br(),
                tabsetPanel(
-                 tabPanel('Categorical Data Summaries', 'contents'),
-                 tabPanel('Numeric Data Summaries', 'contents')
+                 tabPanel('Contingency Tables', 'content'),
+                 tabPanel('Numerical Summaries', 'content'),
+                 tabPanel('Plots', 'content')
                ))
     ),
     
@@ -79,6 +86,18 @@ ui <- page_sidebar(
 
 # Define server logic
 server <- function(input, output) {
+  #Rendering the dataset into a data table in the 'Data Download' tab
+  output$housing_table <- renderDataTable({
+    datatable(housing_data)
+  })
+  output$housing_download <- downloadHandler(
+    filename = function(){
+      paste('housing_data-', Sys.Date(), '.csv', sep='')
+    },
+    content = function(con){
+      write.csv(housing_data, con)
+    }
+  )
 
 }
 
