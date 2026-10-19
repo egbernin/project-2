@@ -63,7 +63,7 @@ housing_data |>
 stacked_barplot <- ggplot(data = housing_data |>
                            drop_na(Regionname, CouncilArea), aes(x = Regionname, fill = CouncilArea))
 stacked_barplot + geom_bar() +
-  labs(x = 'Name of General Region')
+  labs(title = 'Stacked Barplot Comparing Regionname and CouncilArea', y = 'Count')
 ```
 
 *Adding a histogram for the **Rooms** variable.*
@@ -71,24 +71,26 @@ stacked_barplot + geom_bar() +
 ```{r}
 smoothed_histogram <- ggplot(housing_data |>
                                drop_na(Rooms), aes(x = Rooms))
-smoothed_histogram + geom_density()
+smoothed_histogram + geom_density() +
+  labs(title = 'Histogram for Rooms', x = '# of Rooms', y = 'Distribution')
 ```
 
 *Adding a boxplot that compares **Price** and **Type**.*
 
 ```{r}
 price_boxplot <- ggplot(housing_data |>
-                          drop_na(Price, Type))
-price_boxplot + geom_boxplot(aes(x = Type, y = Price, fill = Type))
+                          drop_na(Price, Type, Regionname))
+price_boxplot + geom_boxplot(aes(x = Type, y = Price, fill = Regionname)) +
+  labs(title = 'Boxplot Comparing Type, Price, and Regionname', x = 'Type', y = 'Price', fill = 'Regionname')
 ```
 
-*Adding a scatterplot that compares **Price** and **Distance**.*
+*Adding a scatterplot that compares **Price**, **Distance and Regionname**.*
 
 ```{r}
 price_scatterplot <- ggplot(housing_data |>
-                              drop_na(Price, Distance), aes(x = Price, y = Distance))
+                              drop_na(Price, Distance, Regionname), aes(x = Price, y = Distance, color = Regionname))
 price_scatterplot + geom_point() +
-  geom_smooth(method = lm)
+  labs(title = 'Scatterplot Comparing Price, Distance, and Regionname', x = 'Price', y = 'Distance', color = 'Regionname')
 ```
 
 *Making a side-by-side faceted bar plot of the **Type**, **Method**, and **Regionname** variables.*
@@ -97,7 +99,7 @@ price_scatterplot + geom_point() +
 ggplot(data = housing_data |>
          drop_na(Type, Method, Regionname), aes(x = Method, fill = Type)) +
   geom_bar(position = 'dodge') +
-  labs(x = 'Method') +
+  labs(title = 'Barplot Comparing Regionname and Method Faceted by Type', x = 'Method', y = 'Count') +
   scale_fill_discrete('Type') +
   facet_wrap(~ Regionname)
 ```
@@ -110,6 +112,6 @@ ggplot(data = housing_data |>
   geom_tile(color = 'lightblue') +
   scale_fill_gradient(low = 'lightblue', high = 'darkblue') +
   theme_minimal() +
-  labs(x = 'Type', y = 'Regionname')
+  labs(title = 'Heatmap for Distance Within Type and Regionname', x = 'Type', y = 'Regionname')
   
 ```

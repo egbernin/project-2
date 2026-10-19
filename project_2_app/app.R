@@ -14,6 +14,7 @@ library(readr)
 library(tidyverse)
 library(dplyr)
 library(DT)
+library(shinycssloaders)
 
 housing_data <- read_csv('MELBOURNE_HOUSE_PRICES_LESS.csv')
 
@@ -24,39 +25,39 @@ ui <- page_sidebar(
     
     sidebar = sidebar(
       #Making widget to select categorical variable
-      checkboxGroupInput(
+      radioButtons(
         'cat',
         label = 'Choose a categorical variable',
         choices =
           list(
-            'Type' = housing_data$Type,
-            'Method' = housing_data$Method,
-            'Regionname' = housing_data$Regionname,
-            'Councilarea' = housing_data$Councilarea
-          ),
-        selected = 'Type'
+            'All',
+            'Type',
+            'Regionname'
+            ),
+        selected = 'All'
       ),
       #Making a widget to select numeric variable
-      checkboxGroupInput(
+      radioButtons(
         'num',
         label = 'Choose a numeric variable',
         choices =
           list(
-            'Rooms' = housing_data$Rooms,
-            'Price' = housing_data$Price,
-            'Distance' = housing_data$Distance
+            'All',
+            'Price',
+            'Distance'
           ),
-        selected = 'Rooms'
+        selected = 'All'
       ),
-      conditionalPanel(condition = "input.num == 'Rooms'",
-                       sliderInput('roomrange', 'Select Range', min = 1, max = 31, value = c(1,31)
-                       )),
       conditionalPanel(condition = "input.num == 'Price'",
                        sliderInput('pricerange', 'Select Range', min = 85000, max = 11200000, value = c(85000, 11200000)
                        )),
       conditionalPanel(condition = "input.num == 'Distance'",
                        sliderInput('distancerange', 'Select Range', min = 0, max = 64.1, value = c(0, 64.1)
-                       ))
+                       )),
+      conditionalPanel(condition = "input.num == 'All'",
+                       sliderInput('allrange_price', 'Select Price Range', min = 85000, max = 11200000, value = c(85000, 11200000)),
+                       sliderInput('allrange_distance', 'Select Distance Range', min = 0, max = 64.1, value = c(0, 64.1))
+                       )
     ),
     tabsetPanel(
       tabPanel('About', 
@@ -69,7 +70,8 @@ ui <- page_sidebar(
       tabPanel('Data Download',
                downloadLink('housing_download', 'Download'),
                br(),
-               dataTableOutput(outputId = 'housing_table'),
+               withSpinner(
+               dataTableOutput('housing_table')),
                ),
       tabPanel('Data Exploration', 'This tab is for displaying summaries of the variables that you subsetted in the sidebar.',
                br(),
@@ -78,27 +80,44 @@ ui <- page_sidebar(
                           br(),
                           tabsetPanel(
                             tabPanel('One-Way',
-                                     tableOutput('one_way')),
+                                     withSpinner(tableOutput('one_way'))),
                             tabPanel('Two-Way',
-                                     tableOutput('two_way'))
+                                     withSpinner(tableOutput('two_way')))
                           )),
-                 tabPanel('Numerical Summaries', 'content'),
+                 tabPanel('Numerical Summaries',
+                          br(),
+                          tabsetPanel(
+                            tabPanel('Mean',
+                                     withSpinner(textOutput('mean'))),
+                            tabPanel('Median',
+                                     withSpinner(textOutput('med'))),
+                            tabPanel('Standard Deviation',
+                                     withSpinner(textOutput('sd')))
+                          )),
                  tabPanel('Plots',
-                          plotOutput('scatterplot'),
-                          plotOutput('stacked_barplot'),
-                          plotOutput('heatmap'),
-                          plotOutput('boxplot'),
-                          plotOutput('histogram'),
-                          plotOutput('faceted_barplot'))
-               ))
+                          br(),
+                          tabsetPanel(
+                            tabPanel('Stacked Barplot',
+                                     withSpinner(plotOutput('stacked_barplot'))),
+                            tabPanel('Boxplot',
+                                     withSpinner(plotOutput('boxplot'))),
+                            tabPanel('Histogram',
+                                     withSpinner(plotOutput('histogram'))),
+                            tabPanel('Scatterplot',
+                                     withSpinner(plotOutput('scatterplot'))),
+                            tabPanel('Side-by-Side Barplot',
+                                     withSpinner(plotOutput('side_by_side'))),
+                            tabPanel('Heatmap',
+                                     withSpinner(plotOutput('heatmap')))
+                          ))
     ),
     
     
-  )
+  )))
     
 
 # Define server logic
-server <- function(input, output) {
+server <- function(input, output, session) {
   #Rendering the dataset into a data table in the 'Data Download' tab
   output$housing_table <- renderDataTable({
     datatable(housing_data)
@@ -112,46 +131,73 @@ server <- function(input, output) {
     }
   )
   
-  output$one_way <- renderTable({
-    table(input$num | input$cat)
-  })
   
   
-  
-  output$scatterplot <- renderPlot({
-    ggplot(data = housing_data, aes_string(x = input$num[1], y = input$num[2])) +
-      geom_point() + geom_smooth(method = lm)
-  })
-  
-  output$stacked_barplot <- renderPlot({
-    ggplot(data = housing_data, aes_string(x = input$cat[1], fill = input$cat[2]))
-  })
-  
-  output$heatmap <- renderPlot({
-    ggplot(data = housing_data, aes_string(x = input$cat | input$num, y = input$cat | input$num, fill = input$cat | input$num)) +
-      geom_tile(color = 'lightblue') +
-      scale_fill_gradient(low = 'lightblue', high = 'darkblue') +
-      theme_minimal() +
-      labs(title = 'Heatmap for Melbourne Housing Data')
-  })
+  # rooms_filter <- reactive({
+  #   housing_data |>
+  #     filter(
+  #       Rooms >= input$roomrange[1],
+  #       Rooms <= input$roomrange[2]
+  #     )
+  # })
+  # 
+  # price_filter <- reactive({
+  #   housing_data |>
+  #     filter(
+  #       Price >= input$pricerange[1],
+  #       Price <= input$pricerange[2]
+  #     )
+  # })
+  # 
+  # distance_filter <- reactive({
+  #   housing_data |>
+  #     filter(
+  #       Distance >= input$distancerange[1],
+  #       Distance <= input$distancerange[2]
+  #     )
+  # })
+  # 
+  # cat_filter <- reactive({
+  #   if(input$cat == 'Type'){
+  #     type_data = housing_data$Type
+  #   }else if(input$cat == 'Method'){
+  #     method_data = housing_data$Method
+  #   }else if(input$cat == 'Regionname'){
+  #     region_data = housing_data$Regionname
+  #   }else if(input$cat == 'Councilarea'){
+  #     council_data = housing_data$CouncilArea
+  #   }
+  #   
+  # })
 
-  output$boxplot <- renderPlot({
-    ggplot(data = housing_data, aes_string(x = input$cat, y = input$num, fill = input$cat))
-  })
-  
-  output$histogram <- renderPlot({
-    ggplot(data = housing_data, aes_string(x = input$num)) +
-      geom_density()
-  })
-  
-  output$faceted_barplot <- renderPlot({
-    ggplot(data = housing_data, aes_string(x = input$cat)) +
-      geom_bar(position = 'dodge') +
-      labs(x = '') +
-      scale_fill_discrete('') +
-      facet_wrap(~ '')
-    
-  })
+ # #Calculating mean, median, and sd
+ #  summaries <- reactive({
+ #    req(input$num)
+ #    if(input$num == 'Rooms'){
+ #      room_data <- housing_data[housing_data$Rooms %in% as.numeric(input$num), ]
+ #      room_mean = mean(room_data, na.rm = TRUE)
+ #      room_med = median(room_data, na.rm = TRUE)
+ #      room_sd = sd(room_data, na.rm = TRUE)
+ #      return(list(room_mean, room_med, room_sd))
+ #    }else if(input$num == 'Price'){
+ #      price_data <- housing_data[housing_data$Price %in% as.numeric(input$num), ]
+ #      price_mean = mean(price_data, na.rm = TRUE)
+ #      price_med = median(price_data, na.rm = TRUE)
+ #      price_sd = sd(price_data, na.rm = TRUE)
+ #      return(list(price_mean, price_med, price_sd))
+ #    }else if(input$num == 'Distance'){
+ #      distance_data <- housing_data[housing_data$Distance %in% as.numeric(input$num), ]
+ #      distance_mean = mean(distance_data, na.rm = TRUE)
+ #      distance_med = median(distance_data, na.rm = TRUE)
+ #      distance_sd = sd(distance_data, na.rm = TRUE)
+ #      return(list(distance_mean, distance_med, distance_sd))
+ #    }
+ #  })
+ # 
+ #  output$num_summaries <- renderText({
+ #    summaries()
+ #  })
+
 }
 
 
