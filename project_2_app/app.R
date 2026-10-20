@@ -57,14 +57,28 @@ ui <- page_sidebar(
       conditionalPanel(condition = "input.num == 'All'",
                        sliderInput('allrange_price', 'Select Price Range', min = 85000, max = 11200000, value = c(85000, 11200000)),
                        sliderInput('allrange_distance', 'Select Distance Range', min = 0, max = 64.1, value = c(0, 64.1))
-                       )
+                       ),
+      #Making a widget for modifier variables
+      radioButtons(
+        'modifier',
+        label = 'Choose a modifier variable',
+        choices =
+          list(
+            'Type',
+            'Regionname',
+            'Price',
+            'Distance',
+            'None'
+          ),
+        selected = 'None'
+      )
     ),
     tabsetPanel(
       tabPanel('About', 
                p('The purpose of this app is to display and summarize data from the Melbourne Housing Market dataset.'),
                p('This data was scraped from the publicly available records of the Australian real estate website Domain. More information about this dataset can be found at the link below:'),
                p('https://www.kaggle.com/datasets/anthonypino/melbourne-housing-market'),
-               p('The first sidebar widget is for subsetting categorical variables from this dataset. The second is for subsetting the numeric variables from this dataset.'),
+               p('The first sidebar widget is for subsetting categorical variables from this dataset. The second is for subsetting the numeric variables from this dataset. The third is for choosing a modifier variable for the plots.'),
                p('The Data Download tab in the main body of this app is there to provide a resource for you to look at the dataset and download it.'),
                p('The Data Exploration tab is to display categorical and numeric data summmaries for this dataset. The summaries displayed will depend on the variables subsetted.')),
       tabPanel('Data Download',
@@ -93,22 +107,9 @@ ui <- page_sidebar(
                           )),
                  tabPanel('Numerical Summaries',
                           br(),
-                          tabsetPanel(
-                            tabPanel('Mean',
-                                     br(),
-                                     actionButton('mean_button', 'Generate Mean'),
-                                     br(),
-                                     withSpinner(textOutput('mean'))),
-                            tabPanel('Median',
-                                     br(),
-                                     actionButton('med_button', 'Generate Median'),
-                                     br(),
-                                     withSpinner(textOutput('med'))),
-                            tabPanel('Standard Deviation',
-                                     br(),
-                                     actionButton('sd_button', 'Generate Standard Deviation'),
-                                     br(),
-                                     withSpinner(textOutput('sd')))
+                          actionButton('summary_button', 'Generate Summaries'),
+                          br(),
+                          withSpinner(tableOutput('num_summaries'))
                           )),
                  tabPanel('Plots',
                           br(),
@@ -165,7 +166,29 @@ server <- function(input, output, session) {
     }
   )
   
-  output$histogram <- renderPlot({
+ 
+  summaries <- reactive({
+    num_sym <- sym(input$num)
+    cat_sym <- sym(input$cat)
+    num_data <- isolate(num_sym)
+    cat_data <- isolate(cat_sym)
+    housing_data |>
+      group_by(cat_data) |>
+      drop_na(cat_data) |>
+      summarize(mean_value = mean(num_data, na.rm = TRUE), sd_value = sd(num_data, na.rm = TRUE), med_value = median(num_data, na.rm = TRUE))
+  })
+  
+  
+  output$num_summaries <- renderTable({
+    input$summary_button
+    summaries()
+  })
+  
+  
+  
+  
+  
+   output$histogram <- renderPlot({
     input$hist_button
     x_data <- sym(input$num)
     histogram_data <- isolate(x_data)
@@ -175,30 +198,6 @@ server <- function(input, output, session) {
       labs(title = 'Histogram of Selected Numeric Variable(s)', x = 'histogram_data', y = 'Distribution')
   })
   
-  #WORK IN PROGRESS
-  # output$boxplot <- renderPlot({
-  #   input$box_button
-  #   cat_sym <- sym(input$cat)
-  #   num_sym <- sym(input$num)
-  #   boxplot_data_cat <- isolate(cat_sym)
-  #   boxplot_data_num <- isolate(num_sym)
-  #   ggplot(data = housing_data |>
-  #            drop_na(!!boxplot_data_cat, !!boxplot_data_num) +
-  #            geom_boxplot(aes(x = !!boxplot_data_num, fill = !!boxplot_data_cat))) +
-  #     labs(title = 'Boxplot of Selected Variables', x = 'Numericl Variable', fill = 'Categorical Variable')
-  # })
-  # 
-  # output$scatterplot <- renderPlot({
-  #   input$scatter_button
-  #   cat_sym <- sym(input$cat)
-  #   num_sym <- sym(input$num)
-  #   scatter_cat <- isolate(cat_sym)
-  #   scatter_num <- isolate(num_sym)
-  #   ggplot(data = housing_data |>
-  #            drop_na(!!scatter_num, !!scatter_cat), aes(x = !!scatter_num, color = !!scatter_cat)) +
-  #     geom_point() +
-  #     labs(title = 'Scatterplot of Selected Variables', x = 'Numeric Variable', color = 'Categorical Variable')
-  # })
   
   output$stacked_barplot <- renderPlot({
     input$stacked_button
@@ -209,7 +208,32 @@ server <- function(input, output, session) {
       geom_bar() +
       labs(title = 'Stacked Barplot of Selected Variables', x = 'Categorical Variable')
   })
+
   
+ 
+  
+  # WORK IN PROGRESS
+  #  output$boxplot <- renderPlot({
+  #   input$box_button
+  #   num_sym <- sym(input$num)
+  #   boxplot_data_num <- isolate(num_sym)
+  #   ggplot(data = housing_data |>
+  #            drop_na(!!boxplot_data_num) +
+  #            geom_boxplot(aes(x = !!boxplot_data_num))) +
+  #     labs(title = 'Boxplot of Selected Variables', x = 'Numeric Variable')
+  # })
+  # 
+  # # 
+  # output$scatterplot <- renderPlot({
+  #   input$scatter_button
+  #   num_sym <- sym(input$num)
+  #   scatter_num <- isolate(num_sym)
+  #   ggplot(data = housing_data |>
+  #            drop_na(!!scatter_num), aes(x = !!scatter_num)) +
+  #     geom_point() +
+  #     labs(title = 'Scatterplot of Selected Variables', x = 'Numeric Variable')
+  # })
+  # 
   
   
   
@@ -218,13 +242,7 @@ server <- function(input, output, session) {
   # 
   # WORK IN PROGRESS
   
-  # rooms_filter <- reactive({
-  #   housing_data |>
-  #     filter(
-  #       Rooms >= input$roomrange[1],
-  #       Rooms <= input$roomrange[2]
-  #     )
-  # })
+
   # 
   # price_filter <- reactive({
   #   housing_data |>
