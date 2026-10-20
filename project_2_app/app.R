@@ -260,28 +260,12 @@ server <- function(input, output, session) {
   #     )
   # })
   # 
-  # cat_filter <- reactive({
-  #   if(input$cat == 'Type'){
-  #     type_data = housing_data$Type
-  #   }else if(input$cat == 'Method'){
-  #     method_data = housing_data$Method
-  #   }else if(input$cat == 'Regionname'){
-  #     region_data = housing_data$Regionname
-  #   }else if(input$cat == 'Councilarea'){
-  #     council_data = housing_data$CouncilArea
-  #   }
-  #   
-  # })
+
 
  # #Calculating mean, median, and sd
  #  summaries <- reactive({
  #    req(input$num)
- #    if(input$num == 'Rooms'){
- #      room_data <- housing_data[housing_data$Rooms %in% as.numeric(input$num), ]
- #      room_mean = mean(room_data, na.rm = TRUE)
- #      room_med = median(room_data, na.rm = TRUE)
- #      room_sd = sd(room_data, na.rm = TRUE)
- #      return(list(room_mean, room_med, room_sd))
+
  #    }else if(input$num == 'Price'){
  #      price_data <- housing_data[housing_data$Price %in% as.numeric(input$num), ]
  #      price_mean = mean(price_data, na.rm = TRUE)
