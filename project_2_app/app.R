@@ -70,8 +70,9 @@ ui <- page_sidebar(
       tabPanel('Data Download',
                downloadLink('housing_download', 'Download'),
                br(),
-               withSpinner(
-               dataTableOutput('housing_table')),
+               actionButton('subset_button', 'Subset Data'),
+               br(),
+               withSpinner(dataTableOutput('housing_table')),
                ),
       tabPanel('Data Exploration', 'This tab is for displaying summaries of the variables that you subsetted in the sidebar.',
                br(),
@@ -80,34 +81,67 @@ ui <- page_sidebar(
                           br(),
                           tabsetPanel(
                             tabPanel('One-Way',
+                                     br(),
+                                     actionButton('one_way_button', 'Generate Table'),
+                                     br(),
                                      withSpinner(tableOutput('one_way'))),
                             tabPanel('Two-Way',
+                                     br(),
+                                     actionButton('two_way_button', 'Generate Table'),
+                                     br(),
                                      withSpinner(tableOutput('two_way')))
                           )),
                  tabPanel('Numerical Summaries',
                           br(),
                           tabsetPanel(
                             tabPanel('Mean',
+                                     br(),
+                                     actionButton('mean_button', 'Generate Mean'),
+                                     br(),
                                      withSpinner(textOutput('mean'))),
                             tabPanel('Median',
+                                     br(),
+                                     actionButton('med_button', 'Generate Median'),
+                                     br(),
                                      withSpinner(textOutput('med'))),
                             tabPanel('Standard Deviation',
+                                     br(),
+                                     actionButton('sd_button', 'Generate Standard Deviation'),
+                                     br(),
                                      withSpinner(textOutput('sd')))
                           )),
                  tabPanel('Plots',
                           br(),
                           tabsetPanel(
                             tabPanel('Stacked Barplot',
+                                     br(),
+                                     actionButton('stacked_button', 'Generate Plot'),
+                                     br(),
                                      withSpinner(plotOutput('stacked_barplot'))),
                             tabPanel('Boxplot',
+                                     br(),
+                                     actionButton('box_button', 'Generate Plot'),
+                                     br(),
                                      withSpinner(plotOutput('boxplot'))),
                             tabPanel('Histogram',
+                                     br(),
+                                     actionButton('hist_button', 'Generate Plot'),
+                                     br(),
                                      withSpinner(plotOutput('histogram'))),
                             tabPanel('Scatterplot',
+                                     br(),
+                                     actionButton('scatter_button', 'Generate Plot'),
+                                     br(),
                                      withSpinner(plotOutput('scatterplot'))),
                             tabPanel('Side-by-Side Barplot',
+                                     br(),
+                                     actionButton('side_button', 'Generate Plot'),
+                                     br(),
                                      withSpinner(plotOutput('side_by_side'))),
                             tabPanel('Heatmap',
+                                     br(),
+                                     actionButton('heatmap_button', 'Generate Plot'),
+                                     br(),
                                      withSpinner(plotOutput('heatmap')))
                           ))
     ),
@@ -131,7 +165,58 @@ server <- function(input, output, session) {
     }
   )
   
+  output$histogram <- renderPlot({
+    input$hist_button
+    x_data <- sym(input$num)
+    histogram_data <- isolate(x_data)
+    ggplot(data = housing_data |>
+             drop_na(!!histogram_data), aes(x = !!histogram_data)) +
+      geom_density() +
+      labs(title = 'Histogram of Selected Numeric Variable(s)', x = 'histogram_data', y = 'Distribution')
+  })
   
+  #WORK IN PROGRESS
+  # output$boxplot <- renderPlot({
+  #   input$box_button
+  #   cat_sym <- sym(input$cat)
+  #   num_sym <- sym(input$num)
+  #   boxplot_data_cat <- isolate(cat_sym)
+  #   boxplot_data_num <- isolate(num_sym)
+  #   ggplot(data = housing_data |>
+  #            drop_na(!!boxplot_data_cat, !!boxplot_data_num) +
+  #            geom_boxplot(aes(x = !!boxplot_data_num, fill = !!boxplot_data_cat))) +
+  #     labs(title = 'Boxplot of Selected Variables', x = 'Numericl Variable', fill = 'Categorical Variable')
+  # })
+  # 
+  # output$scatterplot <- renderPlot({
+  #   input$scatter_button
+  #   cat_sym <- sym(input$cat)
+  #   num_sym <- sym(input$num)
+  #   scatter_cat <- isolate(cat_sym)
+  #   scatter_num <- isolate(num_sym)
+  #   ggplot(data = housing_data |>
+  #            drop_na(!!scatter_num, !!scatter_cat), aes(x = !!scatter_num, color = !!scatter_cat)) +
+  #     geom_point() +
+  #     labs(title = 'Scatterplot of Selected Variables', x = 'Numeric Variable', color = 'Categorical Variable')
+  # })
+  
+  output$stacked_barplot <- renderPlot({
+    input$stacked_button
+    cat_sym <- sym(input$cat)
+    stacked_cat <- isolate(cat_sym)
+    ggplot(data = housing_data |>
+             drop_na(!!stacked_cat), aes(x = !!stacked_cat)) +
+      geom_bar() +
+      labs(title = 'Stacked Barplot of Selected Variables', x = 'Categorical Variable')
+  })
+  
+  
+  
+  
+  
+  # 
+  # 
+  # WORK IN PROGRESS
   
   # rooms_filter <- reactive({
   #   housing_data |>
