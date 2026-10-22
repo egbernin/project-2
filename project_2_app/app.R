@@ -1,11 +1,3 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
 
 library(shiny)
 library(bslib)
@@ -48,6 +40,7 @@ ui <- page_sidebar(
           ),
         selected = 'All'
       ),
+      #Including conditional panels for the sliders
       conditionalPanel(condition = "input.num == 'Price'",
                        sliderInput('pricerange', 'Select Range', min = 85000, max = 11200000, value = c(85000, 11200000)
                        )),
@@ -55,10 +48,13 @@ ui <- page_sidebar(
                        sliderInput('distancerange', 'Select Range', min = 0, max = 64.1, value = c(0, 64.1)
                        )),
       conditionalPanel(condition = "input.num == 'All'",
-                       sliderInput('allrange_price', 'Select Price Range', min = 85000, max = 11200000, value = c(85000, 11200000)),
-                       sliderInput('allrange_distance', 'Select Distance Range', min = 0, max = 64.1, value = c(0, 64.1))
+                       sliderInput('pricerange', 'Select Price Range', min = 85000, max = 11200000, value = c(85000, 11200000)),
+                       sliderInput('distancerange', 'Select Distance Range', min = 0, max = 64.1, value = c(0, 64.1))
                        ),
-      #Making a widget for modifier variables
+      #Making an action button that will subset data
+      actionButton('subset_button', 'Subset Data'),
+      
+      #Making a radio button for modifier variables for plotting data
       radioButtons(
         'modifier',
         label = 'Choose a modifier variable',
@@ -74,6 +70,7 @@ ui <- page_sidebar(
       )
     ),
     tabsetPanel(
+      #Making tab for 'About' section
       tabPanel('About', 
                p('The purpose of this app is to display and summarize data from the Melbourne Housing Market dataset.'),
                p('This data was scraped from the publicly available records of the Australian real estate website Domain. More information about this dataset can be found at the link below:'),
@@ -81,71 +78,62 @@ ui <- page_sidebar(
                p('The first sidebar widget is for subsetting categorical variables from this dataset. The second is for subsetting the numeric variables from this dataset. The third is for choosing a modifier variable for the plots.'),
                p('The Data Download tab in the main body of this app is there to provide a resource for you to look at the dataset and download it.'),
                p('The Data Exploration tab is to display categorical and numeric data summmaries for this dataset. The summaries displayed will depend on the variables subsetted.')),
+      #Making tab for 'Data Download' section
       tabPanel('Data Download',
                downloadLink('housing_download', 'Download'),
                br(),
-               actionButton('subset_button', 'Subset Data'),
-               br(),
-               withSpinner(dataTableOutput('housing_table')),
+               withSpinner(dataTableOutput('housing_table'))
                ),
+      #Making tab for 'Data Exploration' section
       tabPanel('Data Exploration', 'This tab is for displaying summaries of the variables that you subsetted in the sidebar.',
                br(),
                tabsetPanel(
+                 #Making a tab for the contingency tables
                  tabPanel('Contingency Tables',
                           br(),
                           tabsetPanel(
                             tabPanel('One-Way',
                                      br(),
-                                     actionButton('one_way_button', 'Generate Table'),
-                                     br(),
                                      withSpinner(tableOutput('one_way'))),
                             tabPanel('Two-Way',
                                      br(),
-                                     actionButton('two_way_button', 'Generate Table'),
-                                     br(),
                                      withSpinner(tableOutput('two_way')))
                           )),
+                 #Making a tab for the numerical summaries
                  tabPanel('Numerical Summaries',
                           br(),
-                          actionButton('summary_button', 'Generate Summaries'),
-                          br(),
                           withSpinner(tableOutput('num_summaries'))
-                          )),
+                          ),
+                 #Making a tab for the plots
                  tabPanel('Plots',
                           br(),
                           tabsetPanel(
+                            #Making a stacked barplot tab
                             tabPanel('Stacked Barplot',
                                      br(),
-                                     actionButton('stacked_button', 'Generate Plot'),
-                                     br(),
                                      withSpinner(plotOutput('stacked_barplot'))),
+                            #Making a boxplot tab
                             tabPanel('Boxplot',
                                      br(),
-                                     actionButton('box_button', 'Generate Plot'),
-                                     br(),
                                      withSpinner(plotOutput('boxplot'))),
+                            #Making a histogram tab
                             tabPanel('Histogram',
                                      br(),
-                                     actionButton('hist_button', 'Generate Plot'),
-                                     br(),
                                      withSpinner(plotOutput('histogram'))),
+                            #Making a scatterplot tab
                             tabPanel('Scatterplot',
                                      br(),
-                                     actionButton('scatter_button', 'Generate Plot'),
-                                     br(),
                                      withSpinner(plotOutput('scatterplot'))),
+                            #Making a side-by-side barplot tab
                             tabPanel('Side-by-Side Barplot',
                                      br(),
-                                     actionButton('side_button', 'Generate Plot'),
-                                     br(),
                                      withSpinner(plotOutput('side_by_side'))),
+                            #Making a heatmap tab
                             tabPanel('Heatmap',
-                                     br(),
-                                     actionButton('heatmap_button', 'Generate Plot'),
                                      br(),
                                      withSpinner(plotOutput('heatmap')))
                           ))
-    ),
+    )
     
     
   )))
@@ -154,9 +142,8 @@ ui <- page_sidebar(
 # Define server logic
 server <- function(input, output, session) {
   #Rendering the dataset into a data table in the 'Data Download' tab
-  output$housing_table <- renderDataTable({
-    datatable(housing_data)
-  })
+
+  
   output$housing_download <- downloadHandler(
     filename = function(){
       paste('housing_data-', Sys.Date(), '.csv', sep='')
@@ -166,47 +153,151 @@ server <- function(input, output, session) {
     }
   )
   
+  filtered_data <- reactive({
+    #Categorical variable filter
+    if(input$cat == 'All'){
+      cat_sub <- housing_data[c(4,10)]
+    }else if(input$cat == 'Type'){
+      cat_sub <- housing_data[4]
+    }else if(input$cat == 'Regionname'){
+      cat_sub <- housing_data[10]
+    }
+    
+    #Numeric variable filter
+    if(input$num == 'All'){
+      num_sub <- housing_data[c(5,12)]
+    }else if(input$num == 'Price'){
+      num_sub <- housing_data[5]
+    }else if(input$num == 'Distance'){
+      num_sub <- housing_data[12]
+    }
+    
+    #Modifier variable filter
+    if(input$modifier == 'Type'){
+      mod_sub <- housing_data[4]
+    }else if(input$modifier == 'Regionname'){
+      mod_sub <- housing_data[10]
+    }else if(input$modifier == 'Price'){
+      mod_sub <- housing_data[5]
+    }else if(input$modifier == 'Distance'){
+      mod_sub <- housing_data[12]
+    }
+
+  })
+  
+  subset_slider <- reactiveValues(
+    price_slider = NULL,
+    distance_slider = NULL
+  )
+  
+
+  
+  output$housing_table <- renderDataTable({
+    input$subset_button
+    datatable(filtered_data)
+  })
  
-  summaries <- reactive({
-    num_sym <- sym(input$num)
-    cat_sym <- sym(input$cat)
-    num_data <- isolate(num_sym)
-    cat_data <- isolate(cat_sym)
-    housing_data |>
-      group_by(cat_data) |>
-      drop_na(cat_data) |>
-      summarize(mean_value = mean(num_data, na.rm = TRUE), sd_value = sd(num_data, na.rm = TRUE), med_value = median(num_data, na.rm = TRUE))
-  })
-  
-  
-  output$num_summaries <- renderTable({
-    input$summary_button
-    summaries()
-  })
   
   
   
   
   
+  
+  
+   # summaries <- reactive({
+  #   num_sym <- sym(input$num)
+  #   cat_sym <- sym(input$cat)
+  #   num_data <- isolate(num_sym)
+  #   cat_data <- isolate(cat_sym)
+  #   housing_data |>
+  #     group_by(cat_data) |>
+  #     drop_na(cat_data) |>
+  #     summarize(mean_value = mean(num_data, na.rm = TRUE), sd_value = sd(num_data, na.rm = TRUE), med_value = median(num_data, na.rm = TRUE))
+  # })
+  # 
+  # 
+  # output$num_summaries <- renderTable({
+  #   input$summary_button
+  #   summaries()
+  # })
+  # 
+  # 
+  # 
+  # 
+  
+  #Output for histogram
    output$histogram <- renderPlot({
-    input$hist_button
+    input$subset_button
     x_data <- sym(input$num)
     histogram_data <- isolate(x_data)
     ggplot(data = housing_data |>
              drop_na(!!histogram_data), aes(x = !!histogram_data)) +
       geom_density() +
-      labs(title = 'Histogram of Selected Numeric Variable(s)', x = 'histogram_data', y = 'Distribution')
+      labs(title = 'Histogram of Selected Numeric Variable(s)', x = 'Numeric Variable', y = 'Distribution')
   })
   
-  
+  #Output for stacked barplot
   output$stacked_barplot <- renderPlot({
-    input$stacked_button
+    input$subset_button
     cat_sym <- sym(input$cat)
+    num_sym <- sym(input$num)
+    mod_sym <- sym(input$modifier)
     stacked_cat <- isolate(cat_sym)
+    stacked_num <- isolate(num_sym)
+    stacked_mod <- isolate(mod_sym)
     ggplot(data = housing_data |>
-             drop_na(!!stacked_cat), aes(x = !!stacked_cat)) +
-      geom_bar() +
-      labs(title = 'Stacked Barplot of Selected Variables', x = 'Categorical Variable')
+             drop_na(!!stacked_cat,!!stacked_num, !!stacked_mod), aes(x = !!stacked_cat, y = !!stacked_num, fill = !!stacked_mod)) +
+      geom_col() +
+      labs(title = 'Stacked Barplot of Selected Variables', x = 'Categorical Variable', y = 'Numeric Variable', fill = 'Modifier Variable')
+  })
+  
+  output$boxplot <- renderPlot({
+    input$subset_button
+    num_sym <- sym(input$num)
+    boxplot_num <- isolate(num_sym)
+    ggplot(data = housing_data |>
+             drop_na(!!boxplot_num), 
+             geom_boxplot(aes(x = !!boxplot_num))) 
+      labs(title = 'Boxplot of Selected Variables')
+  })
+  
+  output$scatterplot <- renderPlot({
+    input$subset_button
+    num_sym <- sym(input$num)
+    mod_sym <- sym(input$modifier)
+    scatter_num <- isolate(num_sym)
+    scatter_mod <- isolate(mod_sym)
+    ggplot(housing_data |>
+             drop_na(!!scatter_num, !!scatter_mod), aes(x = !!scatter_num, color = !!scatter_mod),
+           geom_point(),
+           labs(title = 'Scatterplot of Selected Variables')
+           )
+  })
+  
+  output$side_by_side <- renderPlot({
+    input$subset_button
+    cat_sym <- sym(input$cat)
+    mod_sym <- sym(input$modifier)
+    bar_cat <- isolate(cat_sym)
+    bar_mod <- isolate(mod_sym)
+    ggplot(housing_data |>
+             drop_na(!!bar_cat, !!bar_mod), aes(x = !!bar_cat, fill = !!bar_mod)) +
+      geom_bar(position = 'dodge')
+    labs(title = 'Side by Side Barplot of Selected Variables', x = 'Categorical Variable', fill = 'Modifier Variable')
+  })
+  
+  output$heatmap <- renderPlot({
+    input$subset_button
+    cat_sym <- sym(input$cat)
+    mod_sym <- sym(input$modifier)
+    heatmap_cat <- isolate(cat_sym)
+    heatmap_mod <- isolate(mod_sym)
+    ggplot(housing_data |>
+             drop_na(!!heatmap_cat, !!heatmap_mod), aes(x = !!heatmap_cat, fill = !!heatmap_mod)) +
+      geom_tile(color = 'lightblue') +
+      scale_fill_gradient(low = 'lightblue', high = 'darkblue') +
+      theme_minimal() +
+      labs(title = 'Heatmap of Selected Variables', x = 'Categorical Variable', fill = 'Modifier Variable')
   })
 
   
