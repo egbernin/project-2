@@ -15,7 +15,7 @@ library(readr)
 *I'm using read_csv to read in the data in the form of a tibble. Then, I'm using str() to check the structure of the data and make sure that all of the data was read in as the right type.*
 
 ```{r}
-housing_data <- read_csv('MELBOURNE_HOUSE_PRICES_LESS.csv')
+housing_data <- read_csv('project_2_app/MELBOURNE_HOUSE_PRICES_LESS.csv')
 str(housing_data)
 ```
 
