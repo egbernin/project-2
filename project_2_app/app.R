@@ -22,37 +22,90 @@ ui <- page_sidebar(
         label = 'Choose a categorical variable',
         choices =
           list(
-            'All',
             'Type',
-            'Regionname'
+            'Regionname',
+            'Both'
             ),
-        selected = 'All'
+        selected = 'Type'
       ),
+      
+      conditionalPanel(condition = "input.cat == 'Type'",
+                       checkboxGroupInput(
+                         'type_levels',
+                         'Select Levels',
+                         choices =
+                           list(
+                             'h',
+                             't',
+                             'u'
+                           )
+                       )
+                         ),
+      conditionalPanel(condition = "input.cat == 'Regionname'",
+                       checkboxGroupInput(
+                         'region_levels',
+                         'Select Levels',
+                         choices = 
+                           list(
+                             'Eastern Metropolitan',
+                             'Eastern Victoria',
+                             'Northern Metropolitan',
+                             'Northern Victoria',
+                             'South-Eastern Metropolitan',
+                             'Western Metropolitan',
+                             'Western Victoria'
+                           )
+                       )),
+      conditionalPanel(condition = "input.cat == 'Both'",
+                       checkboxGroupInput(
+                         'type_all',
+                         'Select Type Levels',
+                         choices =
+                           list(
+                             'h',
+                             't',
+                             'u'
+                           )
+                       ),
+                       checkboxGroupInput(
+                         'region_all',
+                         'Select Regionname Levels',
+                         choices =
+                           list(
+                             'Eastern Metropolitan',
+                             'Eastern Victoria',
+                             'Northern Metropolitan',
+                             'Northern Victoria',
+                             'South-Eastern Metropolitan',
+                             'Western Metropolitan',
+                             'Western Victoria'
+                           )
+                       )),
       #Making a widget to select numeric variable
       radioButtons(
         'num',
         label = 'Choose a numeric variable',
         choices =
           list(
-            'All',
+            'Rooms',
             'Price',
-            'Distance'
+            'Both'
           ),
-        selected = 'All'
+        selected = 'Rooms'
       ),
       #Including conditional panels for the sliders
+      conditionalPanel(condition = "input.num == 'Rooms'",
+                       sliderInput('roomrange', 'Select Range', min = 1, max = 31, value = c(1, 31)
+                       )),
       conditionalPanel(condition = "input.num == 'Price'",
                        sliderInput('pricerange', 'Select Range', min = 85000, max = 11200000, value = c(85000, 11200000)
                        )),
-      conditionalPanel(condition = "input.num == 'Distance'",
-                       sliderInput('distancerange', 'Select Range', min = 0, max = 64.1, value = c(0, 64.1)
-                       )),
-      conditionalPanel(condition = "input.num == 'All'",
-                       sliderInput('pricerange', 'Select Price Range', min = 85000, max = 11200000, value = c(85000, 11200000)),
-                       sliderInput('distancerange', 'Select Distance Range', min = 0, max = 64.1, value = c(0, 64.1))
-                       ),
+      conditionalPanel(condition = "input.num == 'Both'",
+                       sliderInput('roomrange_all', 'Select Room Range', min = 1, max = 31, value = c(1, 31)),
+                       sliderInput('pricerange_all', 'Select Price Range', min = 85000, max = 11200000, value = c(85000, 11200000))),
+ 
       #Making an action button that will subset data
-      actionButton('subset_button', 'Subset Data'),
+      actionButton('subset_button', 'Subset and Plot Data'),
       
       #Making a radio button for modifier variables for plotting data
       radioButtons(
@@ -62,11 +115,10 @@ ui <- page_sidebar(
           list(
             'Type',
             'Regionname',
-            'Price',
-            'Distance',
-            'None'
+            'Rooms',
+            'Price'
           ),
-        selected = 'None'
+        selected = 'Type'
       )
     ),
     tabsetPanel(
@@ -75,12 +127,16 @@ ui <- page_sidebar(
                p('The purpose of this app is to display and summarize data from the Melbourne Housing Market dataset.'),
                p('This data was scraped from the publicly available records of the Australian real estate website Domain. More information about this dataset can be found at the link below:'),
                p('https://www.kaggle.com/datasets/anthonypino/melbourne-housing-market'),
-               p('The first sidebar widget is for subsetting categorical variables from this dataset. The second is for subsetting the numeric variables from this dataset. The third is for choosing a modifier variable for the plots.'),
+               p('The first sidebar widget is for subsetting categorical variables from this dataset. The second is for subsetting the numeric variables from this dataset. The third is for choosing a modifier variable for the plots. This variable will not be subsetted in the data table.'),
                p('The Data Download tab in the main body of this app is there to provide a resource for you to look at the dataset and download it.'),
-               p('The Data Exploration tab is to display categorical and numeric data summmaries for this dataset. The summaries displayed will depend on the variables subsetted.')),
+               p('The Data Exploration tab is to display categorical and numeric data summmaries for this dataset. The summaries displayed will depend on the variables subsetted.'),
+               p("An image of Domain's logo is below:"),
+               imageOutput('logo')),
       #Making tab for 'Data Download' section
       tabPanel('Data Download',
                downloadLink('housing_download', 'Download'),
+               br(),
+               p('Note that this data table includes variables that will not be used in plotting, such as Suburb, Address, Date, etc.'),
                br(),
                withSpinner(dataTableOutput('housing_table'))
                ),
@@ -111,25 +167,37 @@ ui <- page_sidebar(
                             #Making a stacked barplot tab
                             tabPanel('Stacked Barplot',
                                      br(),
+                                     p('This graph requires at least one categorical variable, one numeric variable, and a modifier.'),
+                                     br(),
                                      withSpinner(plotOutput('stacked_barplot'))),
                             #Making a boxplot tab
                             tabPanel('Boxplot',
+                                     br(),
+                                     p('This graph requires at least one categorical variable, one numeric variable, and a modifier.'),
                                      br(),
                                      withSpinner(plotOutput('boxplot'))),
                             #Making a histogram tab
                             tabPanel('Histogram',
                                      br(),
+                                     p('This graph requires at least one numeric variable.'),
+                                     br(),
                                      withSpinner(plotOutput('histogram'))),
                             #Making a scatterplot tab
                             tabPanel('Scatterplot',
+                                     br(),
+                                     p('This graph requires at least one numeric variable and a modifier.'),
                                      br(),
                                      withSpinner(plotOutput('scatterplot'))),
                             #Making a side-by-side barplot tab
                             tabPanel('Side-by-Side Barplot',
                                      br(),
+                                     p('This graph requires at least one categorical variable and a modifier.'),
+                                     br(),
                                      withSpinner(plotOutput('side_by_side'))),
                             #Making a heatmap tab
                             tabPanel('Heatmap',
+                                     br(),
+                                     p('This graph requires at least one categorical variable and a modifier.'),
                                      br(),
                                      withSpinner(plotOutput('heatmap')))
                           ))
@@ -140,8 +208,16 @@ ui <- page_sidebar(
     
 
 # Define server logic
-server <- function(input, output, session) {
+server <- function(input, output) {
 
+  output$logo <- renderImage(
+    {
+    list(src = 'Picture_for_project_2.png')
+  },
+  deleteFile = FALSE
+  )
+  
+  
   #Making the downlaod link
   output$housing_download <- downloadHandler(
     filename = function(){
@@ -152,114 +228,143 @@ server <- function(input, output, session) {
     }
   )
   
+  #ADD CHECKBOXES, SUBSET ROWS NOT COLUMNS, PUT EVERYTHING IN FILTERED_DATA, SEE SCREENSHOT, ISOLATE THINGS
+  
   #Reactive function for filtering the data
-  filtered_data <- reactiveValues({
-    req(input$cat, input$num)
-    switch(input$cat,
-           'All' = housing_data(c[4,10]),
-           'Type' = housing_data[4],
-           'Regionname' = housing_data[10])
-    switch(input$num,
-           'All' = housing_data(c[5,12]),
-           'Price' = housing_data[5],
-           'Distance' = housing_data[12])
-    return(c(input$cat, as.numeric(input$num)))
-  })
-  
-  #ObserveEvent for the price range slider
-  observeEvent(input$pricerange, {
-    df <- filtered_data()
-    df %>%
-      filter(Price >= input$pricerange[1] & Price <= input$pricerange[2])
-  })
-  
-  #ObserveEvent function for the distance range slider
-  observeEvent(input$distancerange, {
-    df <- filtered_data()
-    df %>%
-      filter(Distance >= input$distancerange[1] & Distance <= input$pricerange[2])
-  })
-  
-  #Reactive function for the modifier variable
-  modifier_var <- reactiveValues({
-    if(input$modifier == 'Type'){
-      modifier <- housing_data[4]
-    }else if(input$modifier == 'Regionname'){
-      modifier <- housing_data[10]
-    }else if(input$modifier == 'Price'){
-      modifier <- as.numeric(housing_data[5])
-    }else if(input$modifer == 'Distance'){
-      modifier <- as.numeric(housing_data[12])
-    }else{
-      modifier = ''
+  filtered_data <- reactive({
+    req(input$subset_button)
+    type_vector <- c(input$type_levels)
+    region_vector <- c(input$region_levels)
+    all_region_vector <- c(input$region_all)
+    all_type_vector <- c(input$type_all)
+
+    if(input$cat == 'Both'){
+      subsetted_cat <- housing_data %>%
+        filter(
+          Type %in% all_type_vector,
+          Type %in% all_type_vector,
+          Type %in% all_type_vector,
+          Regionname %in% all_region_vector,
+          Regionname %in% all_region_vector,
+          Regionname %in% all_region_vector,
+          Regionname %in% all_region_vector,
+          Regionname %in% all_region_vector,
+          Regionname %in% all_region_vector,
+          Regionname %in% all_region_vector
+        )
+    }else if(input$cat == 'Type'){
+      subsetted_cat <- housing_data %>%
+        filter(
+          Type %in% type_vector,
+          Type %in% type_vector,
+          Type %in% type_vector
+        )
+    }else if(input$cat == 'Regionname'){
+      subsetted_cat <- housing_data %>%
+        filter(
+          Regionname %in% region_vector,
+          Regionname %in% region_vector,
+          Regionname %in% region_vector,
+          Regionname %in% region_vector,
+          Regionname %in% region_vector,
+          Regionname %in% region_vector,
+          Regionname %in% region_vector
+        )
     }
     
-    return(modifier)
+    if(input$num == 'Rooms'){
+      slider_return <- subsetted_cat[subsetted_cat$Rooms >= isolate(input$roomrange[1]) & subsetted_cat$Rooms <= isolate(input$roomrange[2]), ]
+    }else if(input$num == 'Price'){
+      slider_return <- subsetted_cat[subsetted_cat$Price >= isolate(input$pricerange[1]) & subsetted_cat$Price <= isolate(input$pricerange[2]), ]
+    }else if(input$num == 'Both'){
+      slider_return <- subsetted_cat[subsetted_cat$Price >= isolate(input$pricerange_all[1]) & subsetted_cat$Price <= isolate(input$pricerange_all[2]) &
+                                      subsetted_cat$Rooms >= isolate(input$roomrange_all[1]) & subsetted_cat$Rooms <= isolate(input$roomrange_all[2]), ]
+    }
     
+    return(slider_return)
   })
+  
   
   #Output for housing table
   output$housing_table <- renderDataTable({
-    input$subset_button
-    df <- filtered_data()
-    df
+    filtered_data()
   })
+  
 
+  #Reactive function for the modifier variable
+  modifier_var <- reactive({
+    req(input$modifier)
+    subset_modifier <- c(input$modifier)
+    housing_data %>%
+      select(all_of(subset_modifier))
+  })
+  
   #Output for one way contingency table
   output$one_way <- renderTable({
-    input$subset_button
+    req(input$cat, input$subset_button)
     df <- filtered_data()
-    print(input$cat)
-    table(df[input$cat])
+    print(str(df))
+    table(df[subsetted_cat])
+  })
+  
+  #Output for two way contingency table
+  output$two_way <- renderTable({
+    req(input$cat, input$modifier, input$subset_button)
+    df <- filtered_data()
+    modifier <- modifier_var()
+    print(str(df))
+    table(df[subsetted_cat], modifier)
   })
   
   #Output for numeric summaries
   output$num_summaries <- renderTable({
-    input$subset_button
+    req(input$num, input$cat, input$subset_button)
     df <- filtered_data()
     df %>%
-      group_by(input$cat) %>%
-      drop_na(input$cat) %>%
-      summarize(mean_num = mean(input$num, na.rm = TRUE), sd_num = sd(input$num, na.rm = TRUE), med_num = median(input$num, na.rm = TRUE))
+      group_by(!!sym(subsetted_cat)) %>%
+      drop_na(!!sym(subsetted_cat)) %>%
+      summarize(mean_num = mean(!!(isolate(sym(slider_return))), na.rm = TRUE), sd_num = sd(!!(isolate(sym(slider_return))), na.rm = TRUE), med_num = median(!!(isolate(sym(slider_return))), na.rm = TRUE))
   })
   
   #Output for histogram
    output$histogram <- renderPlot({
-    input$subset_button
+    req(input$num, input$subset_button)
     df <- filtered_data()
     ggplot(df %>%
-             drop_na(!!(isolate(sym(input$num)))), aes(x = !!isolate(sym(input$num)))) +
+             drop_na(!!(isolate(sym(slider_return)))), aes(x = !!(isolate(sym(slider_return))))) +
       geom_density() +
       labs(title = 'Histogram of Selected Numeric Variable(s)', x = 'Numeric Variable', y = 'Distribution')
   })
   
   #Output for stacked barplot
   output$stacked_barplot <- renderPlot({
-    input$subset_button
+    req(input$cat, input$num, input$modifier, input$subset_button)
     df <- filtered_data()
+    modifier <- modifier_var()
     ggplot(data = df %>%
-             drop_na(!!(isolate(sym(input$cat))), !!(isolate(sym(input$num))), !!(isolate(sym(input$modifier)))), aes(x = !!(isolate(sym(input$cat))), y = !!(isolate(sym(input$num))), fill = !!(isolate(sym(input$modifier))))) +
+             drop_na(!!(isolate(sym(subsetted_cat))), !!(isolate(sym(slider_return))), !!(isolate(sym(modifier)))), aes(x = !!(isolate(sym(subsetted_cat)))), y = !!(isolate(sym(slider_return))), fill = !!(isolate(sym(modifier)))) +
       geom_col() +
       labs(title = 'Stacked Barplot of Selected Variables', x = 'Categorical Variable', y = 'Numeric Variable', fill = 'Modifier Variable')
   })
   
   #Output for boxplot
   output$boxplot <- renderPlot({
-    input$subset_button
+    req(input$cat, input$num, input$modifier, input$subset_button)
     df <- filtered_data()
+    modifier <- modifier_var()
     ggplot(data = df %>%
-             drop_na(!!(isolate(sym(input$num))), !!(isolate(sym(input$cat))), !!(isolate(sym(input$modifier)))), 
-             geom_boxplot(aes(x = !!(isolate(sym(input$num)))), y = !!(isolate(sym(input$cat))), fill = !!(isolate(sym(input$modifier))))) 
+             drop_na(!!(isolate(sym(slider_return))), !!(isolate(sym(subsetted_cat))), !!(isolate(sym(modifier)))) + 
+             geom_boxplot(aes(x = !!(isolate(sym(slider_return))), y = !!(isolate(sym(subsetted_cat))), fill = !!(isolate(sym(modifier)))))) +
       labs(title = 'Boxplot of Selected Variables')
   })
   
   #Output for scatterplot
   output$scatterplot <- renderPlot({
-    input$subset_button
+    req(input$num, input$modifier, input$subset_button)
     df <- filtered_data()
     modifier <- modifier_var()
     ggplot(df %>%
-             drop_na(!!(isolate(sym(input$num))), !!(isolate(sym(modifier)))), aes(x = !!(isolate(sym(input$num))), color = !!(isolate(sym(modifier))))) +
+             drop_na(!!(isolate(sym(slider_return))), !!sym(isolate(modifier))), aes(x = !!(isolate(sym(slider_return))), color = !!(isolate(sym(modifier))))) +
            geom_point() +
            labs(title = 'Scatterplot of Selected Variables')
            
@@ -267,20 +372,22 @@ server <- function(input, output, session) {
   
   #Output for side by side barplot
   output$side_by_side <- renderPlot({
-    input$subset_button
+    req(input$cat, input$modifier, input$subset_button)
     df <- filtered_data()
+    modifier <- modifier_var()
     ggplot(df %>%
-             drop_na(!!(isolate(sym(input$cat))), !!(isolate(sym(input$modifier))), aes(x = !!(isolate(sym(input$cat))), fill = !!(isolate(sym(input$modifier)))))) +
+             drop_na(!!(isolate(sym(subsetted_cat))), !!(isolate(sym(modifier)))), aes(x = !!(isolate(sym(subsetted_cat))), fill = !!(isolate(sym(modifier))))) +
       geom_bar(position = 'dodge')
     labs(title = 'Side by Side Barplot of Selected Variables', x = 'Categorical Variable', fill = 'Modifier Variable')
   })
   
   #Output for heatmap
   output$heatmap <- renderPlot({
-    input$subset_button
+    req(input$cat, input$modifier, input$subset_button)
     df <- filtered_data()
+    modifier <- modifier_var()
     ggplot(df %>%
-             drop_na(!!(isolate(sym(input$cat))), !!(isolate(sym(input$modifier)))), aes(x = !!(isolate(sym(input$cat))), fill = !!(isolate(sym(input$modifier))))) +
+             drop_na(!!(isolate(sym(subsetted_cat))), !!(isolate(sym(modifier)))), aes(x = !!(isolate(sym(subsetted_cat))), fill = !!(isolate(sym(modifier))))) +
       geom_tile(color = 'lightblue') +
       scale_fill_gradient(low = 'lightblue', high = 'darkblue') +
       theme_minimal() +
