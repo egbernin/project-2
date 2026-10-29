@@ -28,7 +28,7 @@ ui <- page_sidebar(
             ),
         selected = 'Type'
       ),
-      
+      #Making conditional panels for each categorical option
       conditionalPanel(condition = "input.cat == 'Type'",
                        checkboxGroupInput(
                          'type_levels',
@@ -150,8 +150,12 @@ ui <- page_sidebar(
                           tabsetPanel(
                             tabPanel('One-Way',
                                      br(),
+                                     p('This table requires one of the singular categorical variable options'),
+                                     br(),
                                      withSpinner(tableOutput('one_way'))),
                             tabPanel('Two-Way',
+                                     br(),
+                                     p("Please use the option 'Both' in the Categorical Variable widget to generate this table."),
                                      br(),
                                      withSpinner(tableOutput('two_way')))
                           )),
@@ -210,6 +214,7 @@ ui <- page_sidebar(
 # Define server logic
 server <- function(input, output) {
 
+  #Making the logo image in the 'About' section
   output$logo <- renderImage(
     {
     list(src = 'Picture_for_project_2.png')
@@ -228,7 +233,6 @@ server <- function(input, output) {
     }
   )
   
-  #ADD CHECKBOXES, SUBSET ROWS NOT COLUMNS, PUT EVERYTHING IN FILTERED_DATA, SEE SCREENSHOT, ISOLATE THINGS
   
   #Reactive function for filtering the data
   filtered_data <- reactive({
@@ -294,26 +298,51 @@ server <- function(input, output) {
   #Reactive function for the modifier variable
   modifier_var <- reactive({
     req(input$modifier)
-    subset_modifier <- c(input$modifier)
-    housing_data %>%
-      select(all_of(subset_modifier))
+    if(input$modifier == 'Type'){
+      new_mod <- housing_data %>%
+        select(Type)
+    }else if(input$modifier == 'Regionname'){
+      new_mod <- housing_data %>%
+        select(Regionname)
+    }else if(input$modifier == 'Rooms'){
+      new_mod <- housing_data %>%
+        select(Rooms)
+    }else if(input$modifier == 'Price'){
+      new_mod <- housing_data %>%
+        select(Price)
+    }
+   return(new_mod)
+  })
+  
+  #Reactive object for one way contingency table
+  one_way_subset <- reactive({
+    req(input$cat, input$subset_button)
+    df <- filtered_data()
+    if(input$cat == 'Type'){
+      one_way <- table(df$Type)
+    }else if(input$cat == 'Regionname'){
+      one_way <- table(df$Regionname)
+    }
   })
   
   #Output for one way contingency table
   output$one_way <- renderTable({
-    req(input$cat, input$subset_button)
+    one_way_subset()
+  })
+  
+  #Reactive object for two way contingency table
+  two_way_subset <- reactive({
+    req(input$cat, input$modifier, input$subset_button)
     df <- filtered_data()
-    print(str(df))
-    table(df[subsetted_cat])
+    if(input$cat == 'Both'){
+      two_way <- table(df$Type, df$Regionname)
+    }
+    return(two_way)
   })
   
   #Output for two way contingency table
   output$two_way <- renderTable({
-    req(input$cat, input$modifier, input$subset_button)
-    df <- filtered_data()
-    modifier <- modifier_var()
-    print(str(df))
-    table(df[subsetted_cat], modifier)
+    two_way_subset()
   })
   
   #Output for numeric summaries
@@ -321,18 +350,17 @@ server <- function(input, output) {
     req(input$num, input$cat, input$subset_button)
     df <- filtered_data()
     df %>%
-      group_by(!!sym(subsetted_cat)) %>%
-      drop_na(!!sym(subsetted_cat)) %>%
-      summarize(mean_num = mean(!!(isolate(sym(slider_return))), na.rm = TRUE), sd_num = sd(!!(isolate(sym(slider_return))), na.rm = TRUE), med_num = median(!!(isolate(sym(slider_return))), na.rm = TRUE))
+      group_by(isolate(!!(sym(input$cat)))) %>%
+      drop_na(isolate(!!(sym(input$cat)))) %>%
+      summarize(mean_num = mean(isolate(!!(sym(input$num))), na.rm = TRUE), sd_num = sd(isolate(!!(sym(input$num))), na.rm = TRUE), med_num = median(isolate(!!(sym(input$num))), na.rm = TRUE))
   })
   
   #Output for histogram
    output$histogram <- renderPlot({
     req(input$num, input$subset_button)
     df <- filtered_data()
-    ggplot(df %>%
-             drop_na(!!(isolate(sym(slider_return)))), aes(x = !!(isolate(sym(slider_return))))) +
-      geom_density() +
+    ggplot(drop_na(isolate(!!(sym(input$num)))), aes(x = isolate(!!(sym(input$num))))) +
+      geom_histogram() +
       labs(title = 'Histogram of Selected Numeric Variable(s)', x = 'Numeric Variable', y = 'Distribution')
   })
   
@@ -342,7 +370,7 @@ server <- function(input, output) {
     df <- filtered_data()
     modifier <- modifier_var()
     ggplot(data = df %>%
-             drop_na(!!(isolate(sym(subsetted_cat))), !!(isolate(sym(slider_return))), !!(isolate(sym(modifier)))), aes(x = !!(isolate(sym(subsetted_cat)))), y = !!(isolate(sym(slider_return))), fill = !!(isolate(sym(modifier)))) +
+             drop_na(!!(isolate(sym(input$cat))), !!(isolate(sym(input$num))), !!(isolate(sym(modifier)))), aes(x = !!(isolate(sym(input$cat)))), y = !!(isolate(sym(input$num))), fill = !!(isolate(sym(modifier)))) +
       geom_col() +
       labs(title = 'Stacked Barplot of Selected Variables', x = 'Categorical Variable', y = 'Numeric Variable', fill = 'Modifier Variable')
   })
@@ -353,8 +381,8 @@ server <- function(input, output) {
     df <- filtered_data()
     modifier <- modifier_var()
     ggplot(data = df %>%
-             drop_na(!!(isolate(sym(slider_return))), !!(isolate(sym(subsetted_cat))), !!(isolate(sym(modifier)))) + 
-             geom_boxplot(aes(x = !!(isolate(sym(slider_return))), y = !!(isolate(sym(subsetted_cat))), fill = !!(isolate(sym(modifier)))))) +
+             drop_na(!!(isolate(sym(input$num))), !!(isolate(sym(input$cat))), !!(isolate(sym(modifier)))) + 
+             geom_boxplot(aes(x = !!(isolate(sym(input$num))), y = !!(isolate(sym(input$cat))), fill = !!(isolate(sym(modifier)))))) +
       labs(title = 'Boxplot of Selected Variables')
   })
   
@@ -364,7 +392,7 @@ server <- function(input, output) {
     df <- filtered_data()
     modifier <- modifier_var()
     ggplot(df %>%
-             drop_na(!!(isolate(sym(slider_return))), !!sym(isolate(modifier))), aes(x = !!(isolate(sym(slider_return))), color = !!(isolate(sym(modifier))))) +
+             drop_na(!!(isolate(sym(input$num))), !!sym(isolate(modifier))), aes(x = !!(isolate(sym(input$num))), color = !!(isolate(sym(modifier))))) +
            geom_point() +
            labs(title = 'Scatterplot of Selected Variables')
            
@@ -376,7 +404,7 @@ server <- function(input, output) {
     df <- filtered_data()
     modifier <- modifier_var()
     ggplot(df %>%
-             drop_na(!!(isolate(sym(subsetted_cat))), !!(isolate(sym(modifier)))), aes(x = !!(isolate(sym(subsetted_cat))), fill = !!(isolate(sym(modifier))))) +
+             drop_na(!!(isolate(sym(input$cat))), !!(isolate(sym(modifier)))), aes(x = !!(isolate(sym(input$cat))), fill = !!(isolate(sym(modifier))))) +
       geom_bar(position = 'dodge')
     labs(title = 'Side by Side Barplot of Selected Variables', x = 'Categorical Variable', fill = 'Modifier Variable')
   })
@@ -387,7 +415,7 @@ server <- function(input, output) {
     df <- filtered_data()
     modifier <- modifier_var()
     ggplot(df %>%
-             drop_na(!!(isolate(sym(subsetted_cat))), !!(isolate(sym(modifier)))), aes(x = !!(isolate(sym(subsetted_cat))), fill = !!(isolate(sym(modifier))))) +
+             drop_na(!!(isolate(sym(input$cat))), !!(isolate(sym(modifier)))), aes(x = !!(isolate(sym(input$cat))), fill = !!(isolate(sym(modifier))))) +
       geom_tile(color = 'lightblue') +
       scale_fill_gradient(low = 'lightblue', high = 'darkblue') +
       theme_minimal() +
