@@ -4,6 +4,12 @@ format: html
 editor: visual
 ---
 
+**Author**: Emma Berninger
+
+**Date**: Project Due 10/28
+
+**Purpose**: The purpose of this file is to provide static code for various plots and summaries for the *housing_data* dataset.
+
 *This is where I'm reading any necessary packages into the current session.*
 
 ```{r}
@@ -18,6 +24,8 @@ library(readr)
 housing_data <- read_csv('project_2_app/MELBOURNE_HOUSE_PRICES_LESS.csv')
 str(housing_data)
 ```
+
+*Most of my summaries and plots are for comparing features of the properties (like **Type** and **Rooms**) and the general locations (like **Regionname*** and **Councilarea**). *I am choosing to leave out variables such as **Address**, **Suburb**, and **Postcode** as I feel that this information would be too specific to use.*
 
 *Making contingency tables.*
 
@@ -43,8 +51,10 @@ table(housing_data$Type, housing_data$Regionname)
 
 *Finding numeric summaries.*
 
+*Although the **Price** variable is interesting to me and is very important to this dataset, I don't use it beyond this point because the high and extremely varied values makes graphs difficult to read and understand.*
+
 ```{r}
-#Finding the mean, median, and sd Price values across the Regionname cateogry
+#Finding the mean, median, and sd Price values across the Regionname category
 housing_data |>
   group_by(Regionname) |>
   drop_na(Regionname) |>
@@ -57,16 +67,16 @@ housing_data |>
   summarize(mean_size = mean(Propertycount, na.rm = TRUE), median_size = median(Propertycount, na.rm = TRUE), sd_size = sd(Propertycount, na.rm = TRUE))
 ```
 
-*Adding stacked bar chart for the **Regionname** and **CouncilArea** categories.*
+*Adding stacked bar chart for the **Regionname** and **Type** variables.*
 
 ```{r}
 stacked_barplot <- ggplot(data = housing_data |>
-                           drop_na(Regionname, CouncilArea), aes(x = Regionname, fill = CouncilArea))
+                           drop_na(Regionname, Type), aes(x = Regionname, fill = Type))
 stacked_barplot + geom_bar() +
   labs(title = 'Stacked Barplot Comparing Regionname and CouncilArea', y = 'Count')
 ```
 
-*Adding a histogram for the **Rooms** variable.*
+*Adding a histogram to analyze the distribution of the **Rooms** variable.*
 
 ```{r}
 smoothed_histogram <- ggplot(housing_data |>
@@ -75,25 +85,25 @@ smoothed_histogram + geom_density() +
   labs(title = 'Histogram for Rooms', x = '# of Rooms', y = 'Distribution')
 ```
 
-*Adding a boxplot that compares **Price** and **Type**.*
+*Adding a boxplot that compares five number summaries for **Rooms** and **Type** with the **Regionname*** *variable in the **fill** argument*.
 
 ```{r}
 price_boxplot <- ggplot(housing_data |>
-                          drop_na(Price, Type, Regionname))
-price_boxplot + geom_boxplot(aes(x = Type, y = Price, fill = Regionname)) +
-  labs(title = 'Boxplot Comparing Type, Price, and Regionname', x = 'Type', y = 'Price', fill = 'Regionname')
+                          drop_na(Rooms, Type, Regionname))
+price_boxplot + geom_boxplot(aes(x = Type, y = Rooms, fill = Regionname)) +
+  labs(title = 'Boxplot Comparing Type, Rooms, and Regionname', x = 'Type', y = 'Rooms', fill = 'Regionname')
 ```
 
-*Adding a scatterplot that compares **Price**, **Distance and Regionname**.*
+*Adding a scatterplot that compares **Propertycount** and **Distance** with **Regionname** in the **color** argument.*
 
 ```{r}
 price_scatterplot <- ggplot(housing_data |>
-                              drop_na(Price, Distance, Regionname), aes(x = Price, y = Distance, color = Regionname))
+                              drop_na(Propertycount, Distance, Regionname), aes(x = Propertycount, y = Distance, color = Regionname))
 price_scatterplot + geom_point() +
-  labs(title = 'Scatterplot Comparing Price, Distance, and Regionname', x = 'Price', y = 'Distance', color = 'Regionname')
+  labs(title = 'Scatterplot Comparing Propertycount, Distance, and Regionname', x = 'Propertycount', y = 'Distance', color = 'Regionname')
 ```
 
-*Making a side-by-side faceted bar plot of the **Type**, **Method**, and **Regionname** variables.*
+*Making a side-by-side faceted bar plot of the **Type** and **Method** variables with the **Type** variable in the **fill** argument. This plot is faceted by **Regionname***.
 
 ```{r}
 ggplot(data = housing_data |>
@@ -104,7 +114,7 @@ ggplot(data = housing_data |>
   facet_wrap(~ Regionname)
 ```
 
-*Adding a heatmap for the **Regionname**, **Type, and Distance** variables.*
+*Adding a heatmap for the **Regionname** and **Type** variables with **Distance** in the **fill** argument.*
 
 ```{r}
 ggplot(data = housing_data |>
